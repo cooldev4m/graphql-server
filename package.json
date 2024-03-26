@@ -13,6 +13,7 @@
   "type": "module",
   "dependencies": {
     "@apollo/server": "^4.10.2",
+    "apollo-datasource-mongodb": "^0.6.0",
     "apollo-server": "^3.13.0",
     "apollo-server-express": "^3.13.0",
     "bcryptjs": "^2.4.3",

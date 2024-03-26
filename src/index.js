@@ -8,12 +8,18 @@ import express from "express";
 import http from "http";
 import cors from "cors";
 
-import "./db/mongodb.js";
+import "./db/index.js";
 import UserRouter from "./routes/user.js";
 
 // GraphQL Schemas
 import typeDefs from "./graphql/typeDefs.js";
 import resolvers from "./graphql/resolvers.js";
+import Employee from "./db/employee.js";
+import Employees from "./graphql/data.js";
+
+const dataSources = () => ({
+  employees: new Employees(Employee),
+});
 
 const app = express();
 
@@ -27,6 +33,7 @@ const httpServer = http.createServer(app);
 const server = new ApolloServer({
   typeDefs,
   resolvers,
+  dataSources,
   plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
 });
 
@@ -37,7 +44,12 @@ app.use(
   cors(),
   express.json(),
   expressMiddleware(server, {
-    context: async ({ req }) => ({ token: req.headers.token }),
+    context: async ({ req }) => ({
+      token: req.headers.token,
+      dataSources: {
+        employees: new Employees({ modelOrCollection: Employee }),
+      },
+    }),
   })
 );
 
