@@ -1,18 +1,46 @@
+// Apollo server dependencies
 import { ApolloServer } from "@apollo/server";
-import { startStandaloneServer } from "@apollo/server/standalone";
+import { expressMiddleware } from "@apollo/server/express4";
+import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
 
-import typeDefs from "../typeDefs.js";
+// Express Server
+import express from "express";
+import http from "http";
+import cors from "cors";
 
-import resolvers from "../resolvers.js";
+import "./db/mongodb.js";
+import UserRouter from "./routes/user.js";
+
+// GraphQL Schemas
+import typeDefs from "./graphql/typeDefs.js";
+import resolvers from "./graphql/resolvers.js";
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+app.use("/users", UserRouter);
+
+const httpServer = http.createServer(app);
 
 const server = new ApolloServer({
   typeDefs,
   resolvers,
+  plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
 });
 
-const { url } = await startStandaloneServer(server, {
-  context: async ({ req }) => ({ token: req.headers.token }),
-  listen: { port: 4000 },
-});
+await server.start();
 
-console.log(`Server ready at ${url}`);
+app.use(
+  "/graphql",
+  cors(),
+  express.json(),
+  expressMiddleware(server, {
+    context: async ({ req }) => ({ token: req.headers.token }),
+  })
+);
+
+await new Promise((resolve) => httpServer.listen({ port: 4000 }, resolve));
+
+console.log(`🚀 Server ready at http://localhost:4000/graphql`);
